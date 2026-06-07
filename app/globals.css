@@ -308,7 +308,7 @@ input {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1280px) {
   .hero,
   .form-shell {
     grid-template-columns: 1fr;
