@@ -36,6 +36,11 @@ input {
   font: inherit;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 .site-shell {
   min-height: 100vh;
 }
@@ -251,6 +256,39 @@ input {
   padding: 24px;
 }
 
+.wallet-panel {
+  align-self: start;
+}
+
+.wallet-state {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #e6e8e3;
+  border-radius: 8px;
+  padding: 18px;
+  background: #fbfbf8;
+}
+
+.wallet-state span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.wallet-state strong {
+  overflow-wrap: anywhere;
+  font-size: clamp(22px, 3vw, 34px);
+  line-height: 1.05;
+}
+
+.wallet-state em {
+  color: var(--accent);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 720;
+}
+
 .field {
   display: grid;
   gap: 8px;
@@ -270,6 +308,13 @@ input {
   background: #fff;
 }
 
+.agent-draft {
+  display: grid;
+  gap: 16px;
+  border-top: 1px solid #ececea;
+  padding-top: 16px;
+}
+
 .status-box {
   border: 1px solid #b9ddd1;
   border-radius: 8px;
@@ -277,6 +322,40 @@ input {
   background: #eef8f4;
   color: #184f41;
   line-height: 1.5;
+}
+
+.warning-box,
+.error-box {
+  border-radius: 8px;
+  padding: 14px 16px;
+  line-height: 1.45;
+}
+
+.warning-box {
+  border: 1px solid #e8d49a;
+  background: #fff7df;
+  color: #6d5215;
+}
+
+.error-box {
+  border: 1px solid #efb6b6;
+  background: #fff0f0;
+  color: #8f2020;
+}
+
+.warning-box code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 760;
+}
+
+.text-button {
+  justify-self: start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 720;
 }
 
 .agent-page {

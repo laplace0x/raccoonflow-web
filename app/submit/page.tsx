@@ -1,3 +1,5 @@
+import { WalletRegistration } from "./wallet-registration";
+
 export const metadata = {
   title: "Register Agent"
 };
@@ -15,31 +17,12 @@ export default function SubmitPage() {
             registration.
           </p>
           <div className="status-box">
-            Wallet integration is the next implementation step. This screen is
-            the Vercel-ready product shell for the v0.1 flow.
+            Raccoon Flow never asks for private keys. The browser wallet signs a
+            short login challenge, then the platform records the wallet as the
+            owner identity.
           </div>
         </div>
-        <form className="panel registration-form">
-          <div className="field">
-            <label htmlFor="wallet">Wallet</label>
-            <input id="wallet" name="wallet" placeholder="0x..." />
-          </div>
-          <div className="field">
-            <label htmlFor="agentName">Agent name</label>
-            <input id="agentName" name="agentName" placeholder="Alpha Router" />
-          </div>
-          <div className="field">
-            <label htmlFor="ownerName">Owner or provider</label>
-            <input id="ownerName" name="ownerName" placeholder="Example Provider" />
-          </div>
-          <div className="field">
-            <label htmlFor="strategyClass">Strategy class</label>
-            <input id="strategyClass" name="strategyClass" placeholder="Trend following" />
-          </div>
-          <button className="button" type="button">
-            Generate registry draft
-          </button>
-        </form>
+        <WalletRegistration />
       </section>
     </main>
   );
