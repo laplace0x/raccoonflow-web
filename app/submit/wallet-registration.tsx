@@ -56,6 +56,8 @@ type OwnedAgent = {
   ownerLabel: string | null;
   strategyClass: string | null;
   status: string;
+  registryChainId: number | null;
+  registryAddress: string | null;
   txHash: string | null;
   erc8004AgentId: string | null;
   profileUrl: string;
@@ -72,6 +74,61 @@ declare global {
 
 const shortAddress = (address: string) =>
   `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+const formatDate = (date: string) =>
+  new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  }).format(new Date(date));
+
+function getStatusLabel(status: string) {
+  if (status === "registered") {
+    return "Registered";
+  }
+
+  if (status === "registration_submitted") {
+    return "Registration submitted";
+  }
+
+  if (status === "reserved") {
+    return "Reserved";
+  }
+
+  return status.replaceAll("_", " ");
+}
+
+function getStatusTone(status: string) {
+  if (status === "registered") {
+    return "registered";
+  }
+
+  if (status === "registration_submitted") {
+    return "submitted";
+  }
+
+  if (status === "reserved") {
+    return "reserved";
+  }
+
+  return "neutral";
+}
+
+function getNextAction(agent: OwnedAgent) {
+  if (agent.status === "registered") {
+    return "Attach vault or ranking source";
+  }
+
+  if (agent.status === "registration_submitted") {
+    return "Read minted agentId";
+  }
+
+  if (agent.status === "reserved") {
+    return "Sign ERC-8004 registry tx";
+  }
+
+  return "Review agent profile";
+}
 
 const identityRegistryAbi = [
   {
@@ -416,6 +473,23 @@ export function WalletRegistration() {
     }
   }
 
+  async function finalizeOwnedAgent(agent: OwnedAgent) {
+    setIsBusy(true);
+    setError("");
+
+    try {
+      await finalizeRegistryRegistration(agent.id, 8);
+    } catch (finalizeError) {
+      setError(
+        finalizeError instanceof Error
+          ? finalizeError.message
+          : "Could not finalize registration."
+      );
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
   async function submitRegistryTransaction(agent: TradeAgent) {
     if (!window.ethereum) {
       throw new Error("No browser wallet detected.");
@@ -460,6 +534,38 @@ export function WalletRegistration() {
     await loadOwnedAgents();
     setStatus("ERC-8004 registration transaction submitted.");
     await finalizeRegistryRegistration(data.agent.id);
+  }
+
+  async function registerOwnedAgent(agent: OwnedAgent) {
+    setIsBusy(true);
+    setError("");
+    setReservedAgent(null);
+    setSubmittedAgent(null);
+    setFinalizedAgent(null);
+
+    try {
+      await submitRegistryTransaction({
+        id: agent.id,
+        name: agent.name,
+        slug: agent.slug,
+        status: agent.status,
+        reservedMetadataUrl: agent.metadataUrl,
+        profileUrl: agent.profileUrl,
+        registry: {
+          chain: activeRegistryChain,
+          registerFunction: "register(string agentURI)"
+        }
+      });
+    } catch (agentError) {
+      setError(
+        agentError instanceof Error
+          ? agentError.message
+          : "Could not submit ERC-8004 registry transaction."
+      );
+      setStatus("Resources are reserved, but registry registration did not complete.");
+    } finally {
+      setIsBusy(false);
+    }
   }
 
   async function createTradeAgent(event: React.FormEvent<HTMLFormElement>) {
@@ -515,6 +621,15 @@ export function WalletRegistration() {
   }
 
   const isLoggedIn = Boolean(user);
+  const registeredAgents = ownedAgents.filter(
+    (agent) => agent.status === "registered"
+  ).length;
+  const pendingAgents = ownedAgents.filter(
+    (agent) => agent.status === "registration_submitted"
+  ).length;
+  const reservedAgents = ownedAgents.filter(
+    (agent) => agent.status === "reserved"
+  ).length;
 
   return (
     <div className="panel registration-form wallet-panel">
@@ -545,7 +660,12 @@ export function WalletRegistration() {
         <>
           <section className="owner-agents" aria-label="Your trade agents">
             <div className="owner-agents-head">
-              <strong>Your trade agents</strong>
+              <div>
+                <strong>Your trade agents</strong>
+                <span>
+                  Owner wallet and agent wallet are the same by default in ERC-8004.
+                </span>
+              </div>
               <button
                 className="text-button"
                 type="button"
@@ -555,25 +675,104 @@ export function WalletRegistration() {
                 Refresh
               </button>
             </div>
+            <div className="agent-summary" aria-label="Agent portfolio summary">
+              <div>
+                <span>Total agents</span>
+                <strong>{ownedAgents.length}</strong>
+              </div>
+              <div>
+                <span>Registered</span>
+                <strong>{registeredAgents}</strong>
+              </div>
+              <div>
+                <span>Pending</span>
+                <strong>{pendingAgents}</strong>
+              </div>
+              <div>
+                <span>Network</span>
+                <strong>{activeRegistryChain.name}</strong>
+              </div>
+            </div>
             {ownedAgents.length ? (
-              <div className="agent-list">
+              <div className="agent-card-list">
                 {ownedAgents.map((agent) => (
-                  <article className="agent-row" key={agent.id}>
-                    <div>
-                      <strong>{agent.name}</strong>
-                      <span>{agent.strategyClass || "Unclassified strategy"}</span>
+                  <article className="agent-card" key={agent.id}>
+                    <div className="agent-card-main">
+                      <div className="agent-title-line">
+                        <h3>{agent.name}</h3>
+                        <span className={`status-pill ${getStatusTone(agent.status)}`}>
+                          {getStatusLabel(agent.status)}
+                        </span>
+                      </div>
+                      <a className="agent-slug" href={agent.profileUrl}>
+                        raccoonflow.ai/agents/{agent.slug}
+                      </a>
+                      <div className="agent-field-grid">
+                        <div>
+                          <span>Strategy</span>
+                          <strong>{agent.strategyClass || "Unclassified strategy"}</strong>
+                        </div>
+                        <div>
+                          <span>Owner</span>
+                          <strong>
+                            {agent.ownerLabel ||
+                              (walletAddress ? shortAddress(walletAddress) : "Owner wallet")}
+                          </strong>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <span>Status</span>
-                      <strong>{agent.status}</strong>
+                    <div className="agent-field-grid agent-registry-grid">
+                      <div>
+                        <span>ERC-8004</span>
+                        <strong>
+                          {agent.erc8004AgentId
+                            ? `#${agent.erc8004AgentId}`
+                            : "Pending"}
+                        </strong>
+                      </div>
+                      <div>
+                        <span>Agent wallet</span>
+                        <strong>Same as owner</strong>
+                      </div>
+                      <div>
+                        <span>Agent URI</span>
+                        <strong>/agents/{agent.slug}/erc8004.json</strong>
+                      </div>
+                      <div>
+                        <span>Updated</span>
+                        <strong>{formatDate(agent.updatedAt)}</strong>
+                      </div>
                     </div>
-                    <div>
-                      <span>ERC-8004</span>
-                      <strong>{agent.erc8004AgentId ?? "pending"}</strong>
-                    </div>
-                    <div className="agent-links">
-                      <a href={agent.metadataUrl}>Metadata</a>
-                      {agent.explorerUrl ? <a href={agent.explorerUrl}>Tx</a> : null}
+                    <div className="agent-next-action">
+                      <div>
+                        <span>Next action</span>
+                        <strong>{getNextAction(agent)}</strong>
+                      </div>
+                      <div className="agent-links">
+                        <a href={agent.profileUrl}>Profile</a>
+                        <a href={agent.metadataUrl}>Metadata</a>
+                        {agent.status === "reserved" ? (
+                          <button
+                            type="button"
+                            onClick={() => registerOwnedAgent(agent)}
+                            disabled={isBusy}
+                          >
+                            Register
+                          </button>
+                        ) : null}
+                        {agent.status === "registration_submitted" ? (
+                          <button
+                            type="button"
+                            onClick={() => finalizeOwnedAgent(agent)}
+                            disabled={isBusy}
+                          >
+                            Finalize
+                          </button>
+                        ) : null}
+                        {agent.explorerUrl ? (
+                          <a href={agent.explorerUrl}>Tx</a>
+                        ) : null}
+                      </div>
                     </div>
                   </article>
                 ))}
@@ -582,6 +781,12 @@ export function WalletRegistration() {
               <p className="empty-state">No trade agents under this wallet yet.</p>
             )}
           </section>
+          {reservedAgents ? (
+            <div className="warning-box">
+              {reservedAgents} reserved agent{reservedAgents === 1 ? "" : "s"} still
+              need an ERC-8004 registry transaction.
+            </div>
+          ) : null}
           <form className="trade-agent-form" onSubmit={createTradeAgent}>
             <div className="field">
               <label htmlFor="agentName">Agent name</label>
