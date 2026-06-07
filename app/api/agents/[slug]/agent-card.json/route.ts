@@ -1,4 +1,4 @@
-import { getAgent } from "@/lib/agents";
+import { getPublicAgent } from "@/lib/agents";
 
 type RouteContext = {
   params: Promise<{
@@ -6,9 +6,9 @@ type RouteContext = {
   }>;
 };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { slug } = await context.params;
-  const agent = getAgent(slug);
+  const agent = await getPublicAgent(slug, new URL(request.url).origin);
 
   return Response.json({
     schema: "raccoonflow.agent-card.v0.1",

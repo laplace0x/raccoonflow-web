@@ -1,4 +1,4 @@
-import { getAgent } from "@/lib/agents";
+import { getPublicAgent } from "@/lib/agents";
 
 type AgentPageProps = {
   params: Promise<{
@@ -8,7 +8,7 @@ type AgentPageProps = {
 
 export async function generateMetadata({ params }: AgentPageProps) {
   const { slug } = await params;
-  const agent = getAgent(slug);
+  const agent = await getPublicAgent(slug);
 
   return {
     title: agent.name,
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: AgentPageProps) {
 
 export default async function AgentPage({ params }: AgentPageProps) {
   const { slug } = await params;
-  const agent = getAgent(slug);
+  const agent = await getPublicAgent(slug);
 
   return (
     <main className="site-shell">
@@ -48,10 +48,10 @@ export default async function AgentPage({ params }: AgentPageProps) {
           </div>
         </div>
         <div className="actions">
-          <a className="button" href={`/api/agents/${agent.slug}/erc8004.json`}>
+          <a className="button" href={`/agents/${agent.slug}/erc8004.json`}>
             ERC-8004 metadata
           </a>
-          <a className="button secondary" href={`/api/agents/${agent.slug}/agent-card.json`}>
+          <a className="button secondary" href={`/agents/${agent.slug}/agent-card.json`}>
             Agent Card
           </a>
         </div>
