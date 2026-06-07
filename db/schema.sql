@@ -41,6 +41,9 @@ create table if not exists agent_drafts (
   strategy_class text,
   owner_label text,
   status text not null default 'draft',
+  registry_chain_id bigint,
+  registry_address text,
+  registry_tx_hash text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

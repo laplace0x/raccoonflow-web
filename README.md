@@ -6,7 +6,7 @@ Phase one scope:
 
 - Register a Raccoon Flow wallet profile.
 - Reserve a trade agent slug and hosted metadata URLs.
-- Register an AI agent into the ERC-8004 agent registry with the same wallet.
+- Prompt the wallet to register the reserved agent in the ERC-8004 Identity Registry with `register(agentURI)`.
 - Finalize reserved resources after on-chain registration succeeds.
 - Release reserved resources if on-chain registration fails.
 

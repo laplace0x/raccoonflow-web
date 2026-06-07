@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getAddress } from "viem";
+import { encodeFunctionData, getAddress } from "viem";
+import { activeRegistryChain } from "@/lib/chains";
 
 type EthereumProvider = {
   request<T = unknown>(args: { method: string; params?: unknown[] }): Promise<T>;
@@ -24,6 +25,19 @@ type TradeAgent = {
   status: string;
   reservedMetadataUrl: string;
   profileUrl: string;
+  registry: {
+    chain: typeof activeRegistryChain;
+    registerFunction: string;
+  };
+};
+
+type SubmittedAgent = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  txHash: string;
+  explorerUrl: string;
 };
 
 declare global {
@@ -34,6 +48,16 @@ declare global {
 
 const shortAddress = (address: string) =>
   `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+const identityRegistryAbi = [
+  {
+    type: "function",
+    name: "register",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "agentURI", type: "string" }],
+    outputs: [{ name: "agentId", type: "uint256" }]
+  }
+] as const;
 
 async function readJson<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => ({}))) as T;
@@ -61,6 +85,9 @@ export function WalletRegistration() {
   const [error, setError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [reservedAgent, setReservedAgent] = useState<TradeAgent | null>(null);
+  const [submittedAgent, setSubmittedAgent] = useState<SubmittedAgent | null>(
+    null
+  );
 
   const hasWallet = useMemo(
     () => typeof window !== "undefined" && Boolean(window.ethereum),
@@ -205,6 +232,7 @@ export function WalletRegistration() {
       setUser(verifyData.user);
       setStatus("Logged in. You can create a trade agent next.");
       setReservedAgent(null);
+      setSubmittedAgent(null);
     } catch (signError) {
       setError(
         signError instanceof Error ? signError.message : "Wallet sign-in failed."
@@ -228,6 +256,7 @@ export function WalletRegistration() {
       setWalletAddress("");
       setChainId(null);
       setReservedAgent(null);
+      setSubmittedAgent(null);
       setStatus("Logged out. Connect your wallet to start again.");
     } catch (logoutError) {
       setError(
@@ -238,17 +267,106 @@ export function WalletRegistration() {
     }
   }
 
+  async function ensureRegistryChain() {
+    if (!window.ethereum) {
+      throw new Error("No browser wallet detected.");
+    }
+
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: activeRegistryChain.hexChainId }]
+      });
+    } catch (switchError) {
+      const errorCode =
+        typeof switchError === "object" &&
+        switchError &&
+        "code" in switchError
+          ? Number(switchError.code)
+          : 0;
+
+      if (errorCode !== 4902) {
+        throw switchError;
+      }
+
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [
+          {
+            chainId: activeRegistryChain.hexChainId,
+            chainName: activeRegistryChain.name,
+            nativeCurrency: {
+              name: "Ethereum",
+              symbol: "ETH",
+              decimals: 18
+            },
+            rpcUrls: activeRegistryChain.rpcUrls,
+            blockExplorerUrls: [activeRegistryChain.explorerUrl]
+          }
+        ]
+      });
+    }
+
+    setChainId(activeRegistryChain.chainId);
+  }
+
+  async function submitRegistryTransaction(agent: TradeAgent) {
+    if (!window.ethereum) {
+      throw new Error("No browser wallet detected.");
+    }
+
+    if (!walletAddress) {
+      throw new Error("Wallet address is not available.");
+    }
+
+    setStatus(`Switching wallet to ${activeRegistryChain.name}...`);
+    await ensureRegistryChain();
+
+    setStatus("Waiting for ERC-8004 registry transaction signature...");
+
+    const txHash = await window.ethereum.request<`0x${string}`>({
+      method: "eth_sendTransaction",
+      params: [
+        {
+          from: walletAddress,
+          to: activeRegistryChain.identityRegistryAddress,
+          data: encodeFunctionData({
+            abi: identityRegistryAbi,
+            functionName: "register",
+            args: [agent.reservedMetadataUrl]
+          })
+        }
+      ]
+    });
+
+    setStatus("Recording submitted registry transaction...");
+
+    const response = await fetch(`/api/trade-agents/${agent.id}/registry-tx`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ txHash })
+    });
+    const data = await readJson<{ agent: SubmittedAgent }>(response);
+
+    setSubmittedAgent(data.agent);
+    setStatus("ERC-8004 registration transaction submitted.");
+  }
+
   async function createTradeAgent(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     setError("");
     setReservedAgent(null);
+    setSubmittedAgent(null);
     setIsBusy(true);
 
     const formData = new FormData(form);
     const name = String(formData.get("agentName") ?? "");
     const ownerLabel = String(formData.get("ownerName") ?? "");
     const strategyClass = String(formData.get("strategyClass") ?? "");
+    let reservationCompleted = false;
 
     try {
       setStatus("Reserving trade agent resources...");
@@ -266,16 +384,21 @@ export function WalletRegistration() {
       });
       const data = await readJson<{ agent: TradeAgent }>(response);
 
+      reservationCompleted = true;
       setReservedAgent(data.agent);
-      setStatus("Resources reserved. Continue with ERC-8004 registration.");
       form.reset();
+      await submitRegistryTransaction(data.agent);
     } catch (agentError) {
       setError(
         agentError instanceof Error
           ? agentError.message
-          : "Could not create trade agent."
+          : "Could not reserve or register trade agent."
       );
-      setStatus("Logged in. You can create a trade agent next.");
+      setStatus(
+        reservationCompleted
+          ? "Resources are reserved, but registry registration did not complete."
+          : "Logged in. You can create a trade agent next."
+      );
     } finally {
       setIsBusy(false);
     }
@@ -344,7 +467,17 @@ export function WalletRegistration() {
               {isBusy ? "Reserving..." : "Reserve trade agent"}
             </button>
           </form>
-          {reservedAgent ? (
+          {submittedAgent ? (
+            <div className="success-box">
+              <strong>{submittedAgent.name}</strong>
+              <span>Registry transaction: </span>
+              <a href={submittedAgent.explorerUrl}>{submittedAgent.txHash}</a>
+              <p>
+                Transaction submitted on {activeRegistryChain.name}. Finalize
+                after confirmation by reading the minted ERC-8004 agentId.
+              </p>
+            </div>
+          ) : reservedAgent ? (
             <div className="success-box">
               <strong>{reservedAgent.name}</strong>
               <span>Reserved metadata: </span>
@@ -352,9 +485,8 @@ export function WalletRegistration() {
                 {reservedAgent.reservedMetadataUrl}
               </a>
               <p>
-                Next: sign the ERC-8004 registry transaction on Arbitrum
-                Sepolia. If registration fails, this reservation should be
-                released.
+                Wallet registration did not complete. Retry the ERC-8004
+                transaction or release this reservation.
               </p>
             </div>
           ) : null}

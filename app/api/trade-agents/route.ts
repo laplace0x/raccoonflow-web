@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { getCurrentUser } from "@/lib/auth";
+import { activeRegistryChain } from "@/lib/chains";
 import { ensureSchema, getSql, isDatabaseConfigured } from "@/lib/db";
 import { slugify } from "@/lib/slugs";
 
@@ -106,6 +107,7 @@ export async function POST(request: Request) {
   `;
 
   const agent = rows[0];
+  const origin = new URL(request.url).origin;
 
   return NextResponse.json({
     agent: {
@@ -113,8 +115,12 @@ export async function POST(request: Request) {
       name: agent.name,
       slug: agent.slug,
       status: agent.status,
-      reservedMetadataUrl: `/agents/${agent.slug}/erc8004.json`,
-      profileUrl: `/agents/${agent.slug}`
+      reservedMetadataUrl: `${origin}/agents/${agent.slug}/erc8004.json`,
+      profileUrl: `${origin}/agents/${agent.slug}`,
+      registry: {
+        chain: activeRegistryChain,
+        registerFunction: "register(string agentURI)"
+      }
     }
   });
 }

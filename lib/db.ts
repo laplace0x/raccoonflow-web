@@ -87,9 +87,27 @@ export async function ensureSchema() {
           strategy_class text,
           owner_label text,
           status text not null default 'draft',
+          registry_chain_id bigint,
+          registry_address text,
+          registry_tx_hash text,
           created_at timestamptz not null default now(),
           updated_at timestamptz not null default now()
         )
+      `;
+
+      await tx`
+        alter table agent_drafts
+        add column if not exists registry_chain_id bigint
+      `;
+
+      await tx`
+        alter table agent_drafts
+        add column if not exists registry_address text
+      `;
+
+      await tx`
+        alter table agent_drafts
+        add column if not exists registry_tx_hash text
       `;
 
       await tx`

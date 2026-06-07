@@ -28,11 +28,14 @@ export async function GET(_request: Request, context: RouteContext) {
       name: activeRegistryChain.name,
       key: activeRegistryChain.key,
       chainId: activeRegistryChain.chainId,
+      identityRegistryAddress: activeRegistryChain.identityRegistryAddress,
       explorerUrl: activeRegistryChain.explorerUrl,
       productionTarget: {
         name: futureProductionRegistryChain.name,
         key: futureProductionRegistryChain.key,
-        chainId: futureProductionRegistryChain.chainId
+        chainId: futureProductionRegistryChain.chainId,
+        identityRegistryAddress:
+          futureProductionRegistryChain.identityRegistryAddress
       }
     },
     raccoonFlow: {
