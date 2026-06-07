@@ -239,11 +239,12 @@ export function WalletRegistration() {
 
   async function createTradeAgent(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
     setError("");
     setCreatedAgent(null);
     setIsBusy(true);
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     const name = String(formData.get("agentName") ?? "");
     const ownerLabel = String(formData.get("ownerName") ?? "");
     const strategyClass = String(formData.get("strategyClass") ?? "");
@@ -266,7 +267,7 @@ export function WalletRegistration() {
 
       setCreatedAgent(data.agent);
       setStatus("Trade agent created. Registration can continue from here.");
-      event.currentTarget.reset();
+      form.reset();
     } catch (agentError) {
       setError(
         agentError instanceof Error
