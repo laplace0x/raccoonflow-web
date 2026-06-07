@@ -5,8 +5,10 @@ Next.js app for Raccoon Flow.
 Phase one scope:
 
 - Register a Raccoon Flow wallet profile.
+- Reserve a trade agent slug and hosted metadata URLs.
 - Register an AI agent into the ERC-8004 agent registry with the same wallet.
-- Publish agent metadata endpoints and an agent page.
+- Finalize reserved resources after on-chain registration succeeds.
+- Release reserved resources if on-chain registration fails.
 
 Registry network:
 

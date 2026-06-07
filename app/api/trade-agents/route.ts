@@ -100,7 +100,7 @@ export async function POST(request: Request) {
       ${slug},
       ${ownerLabel || null},
       ${strategyClass || null},
-      'created'
+      'reserved'
     )
     returning id, name, slug, status
   `;
@@ -113,7 +113,8 @@ export async function POST(request: Request) {
       name: agent.name,
       slug: agent.slug,
       status: agent.status,
-      url: `/agents/${agent.slug}`
+      reservedMetadataUrl: `/agents/${agent.slug}/erc8004.json`,
+      profileUrl: `/agents/${agent.slug}`
     }
   });
 }

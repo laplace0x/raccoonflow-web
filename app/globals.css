@@ -376,6 +376,11 @@ button:disabled {
   text-underline-offset: 3px;
 }
 
+.success-box p {
+  margin: 10px 0 0;
+  color: #2f6558;
+}
+
 .warning-box code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 760;

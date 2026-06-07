@@ -22,7 +22,8 @@ type TradeAgent = {
   name: string;
   slug: string;
   status: string;
-  url: string;
+  reservedMetadataUrl: string;
+  profileUrl: string;
 };
 
 declare global {
@@ -59,7 +60,7 @@ export function WalletRegistration() {
   const [status, setStatus] = useState("Connect your wallet to start.");
   const [error, setError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
-  const [createdAgent, setCreatedAgent] = useState<TradeAgent | null>(null);
+  const [reservedAgent, setReservedAgent] = useState<TradeAgent | null>(null);
 
   const hasWallet = useMemo(
     () => typeof window !== "undefined" && Boolean(window.ethereum),
@@ -203,7 +204,7 @@ export function WalletRegistration() {
 
       setUser(verifyData.user);
       setStatus("Logged in. You can create a trade agent next.");
-      setCreatedAgent(null);
+      setReservedAgent(null);
     } catch (signError) {
       setError(
         signError instanceof Error ? signError.message : "Wallet sign-in failed."
@@ -226,7 +227,7 @@ export function WalletRegistration() {
       setUser(null);
       setWalletAddress("");
       setChainId(null);
-      setCreatedAgent(null);
+      setReservedAgent(null);
       setStatus("Logged out. Connect your wallet to start again.");
     } catch (logoutError) {
       setError(
@@ -241,7 +242,7 @@ export function WalletRegistration() {
     event.preventDefault();
     const form = event.currentTarget;
     setError("");
-    setCreatedAgent(null);
+    setReservedAgent(null);
     setIsBusy(true);
 
     const formData = new FormData(form);
@@ -250,7 +251,7 @@ export function WalletRegistration() {
     const strategyClass = String(formData.get("strategyClass") ?? "");
 
     try {
-      setStatus("Creating trade agent...");
+      setStatus("Reserving trade agent resources...");
 
       const response = await fetch("/api/trade-agents", {
         method: "POST",
@@ -265,8 +266,8 @@ export function WalletRegistration() {
       });
       const data = await readJson<{ agent: TradeAgent }>(response);
 
-      setCreatedAgent(data.agent);
-      setStatus("Trade agent created. Registration can continue from here.");
+      setReservedAgent(data.agent);
+      setStatus("Resources reserved. Continue with ERC-8004 registration.");
       form.reset();
     } catch (agentError) {
       setError(
@@ -340,14 +341,21 @@ export function WalletRegistration() {
               />
             </div>
             <button className="button secondary" type="submit" disabled={isBusy}>
-              {isBusy ? "Creating..." : "Create trade agent"}
+              {isBusy ? "Reserving..." : "Reserve trade agent"}
             </button>
           </form>
-          {createdAgent ? (
+          {reservedAgent ? (
             <div className="success-box">
-              <strong>{createdAgent.name}</strong>
-              <span>Created at </span>
-              <a href={createdAgent.url}>{createdAgent.url}</a>
+              <strong>{reservedAgent.name}</strong>
+              <span>Reserved metadata: </span>
+              <a href={reservedAgent.reservedMetadataUrl}>
+                {reservedAgent.reservedMetadataUrl}
+              </a>
+              <p>
+                Next: sign the ERC-8004 registry transaction on Arbitrum
+                Sepolia. If registration fails, this reservation should be
+                released.
+              </p>
             </div>
           ) : null}
           <button
