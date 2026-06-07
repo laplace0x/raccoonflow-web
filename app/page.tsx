@@ -217,7 +217,7 @@ function toVaultRankRow(vault: ApiVault): VaultRankRow {
 }
 
 export default function Home() {
-  const [rank, setRank] = useState<"agents" | "vaults">("agents");
+  const [rank, setRank] = useState<"agents" | "vaults">("vaults");
   const [agentFilter, setAgentFilter] = useState("all");
   const [vaultFilter, setVaultFilter] = useState("all");
   const [user, setUser] = useState<AuthUser | null>(null);
