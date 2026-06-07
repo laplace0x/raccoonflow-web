@@ -1,6 +1,6 @@
 const steps = [
   ["Register wallet", "Create a Raccoon Flow platform identity with a user-owned wallet."],
-  ["Create agent draft", "Reserve an agent slug and generate hosted metadata URLs."],
+  ["Create trade agent", "Reserve an agent slug and generate hosted metadata URLs."],
   ["Submit registry tx", "Use the same wallet to call ERC-8004 register(agentURI)."],
   ["Publish metadata", "Confirm ownerOf(tokenId), then publish the agent page and JSON endpoints."]
 ];

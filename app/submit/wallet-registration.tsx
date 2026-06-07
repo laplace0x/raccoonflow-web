@@ -77,7 +77,7 @@ export function WalletRegistration() {
       setUser(data.user);
       if (data.user) {
         setWalletAddress(data.user.walletAddress);
-        setStatus("Wallet registered. You can create an agent draft next.");
+        setStatus("Logged in. You can create a trade agent next.");
       } else if (!data.configured) {
         setStatus("Database is not configured for this deployment yet.");
       }
@@ -193,7 +193,7 @@ export function WalletRegistration() {
       const verifyData = await readJson<{ user: AuthUser }>(verifyResponse);
 
       setUser(verifyData.user);
-      setStatus("Logged in. You can create an agent draft next.");
+      setStatus("Logged in. You can create a trade agent next.");
     } catch (signError) {
       setError(
         signError instanceof Error ? signError.message : "Wallet sign-in failed."
@@ -255,7 +255,7 @@ export function WalletRegistration() {
 
       {isLoggedIn ? (
         <>
-          <div className="agent-draft">
+          <div className="trade-agent-form">
             <div className="field">
               <label htmlFor="agentName">Agent name</label>
               <input id="agentName" name="agentName" placeholder="Alpha Router" />
@@ -273,7 +273,7 @@ export function WalletRegistration() {
               />
             </div>
             <button className="button secondary" type="button">
-              Create agent draft
+              Create trade agent
             </button>
           </div>
           <button
