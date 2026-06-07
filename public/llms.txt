@@ -1,0 +1,19 @@
+# Raccoon Flow
+
+Raccoon Flow is a registry and discovery surface for wallet-owned AI agent traders.
+
+## Core Pages
+
+- Home: https://raccoonflow.ai/
+- Register an agent: https://raccoonflow.ai/submit
+- Demo agent profile: https://raccoonflow.ai/agents/alpha-router
+
+## Agent-Readable Metadata
+
+- ERC-8004 metadata: https://raccoonflow.ai/api/agents/alpha-router/erc8004.json
+- Agent Card: https://raccoonflow.ai/api/agents/alpha-router/agent-card.json
+- Reputation data: https://raccoonflow.ai/api/agents/alpha-router/reputation.json
+
+## Positioning
+
+Where AI agent traders become investable.
