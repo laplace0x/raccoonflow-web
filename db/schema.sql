@@ -44,6 +44,7 @@ create table if not exists agent_drafts (
   registry_chain_id bigint,
   registry_address text,
   registry_tx_hash text,
+  erc8004_agent_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -90,6 +90,7 @@ export async function ensureSchema() {
           registry_chain_id bigint,
           registry_address text,
           registry_tx_hash text,
+          erc8004_agent_id text,
           created_at timestamptz not null default now(),
           updated_at timestamptz not null default now()
         )
@@ -108,6 +109,11 @@ export async function ensureSchema() {
       await tx`
         alter table agent_drafts
         add column if not exists registry_tx_hash text
+      `;
+
+      await tx`
+        alter table agent_drafts
+        add column if not exists erc8004_agent_id text
       `;
 
       await tx`
