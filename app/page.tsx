@@ -37,6 +37,23 @@ type VaultRankRow = {
   agentManaged: boolean;
 };
 
+type ApiVault = {
+  id: string;
+  venue: string;
+  externalId: string;
+  name: string;
+  vaultAddress: string | null;
+  leaderAddress: string | null;
+  managerName: string | null;
+  managerType: string;
+  strategy: string | null;
+  aumUsd: number | null;
+  return30d: number | null;
+  maxDrawdown: number | null;
+  isClosed: boolean;
+  relationship: string | null;
+};
+
 const agents: AgentRankRow[] = [
   {
     slug: "signal-steward",
@@ -82,7 +99,7 @@ const agents: AgentRankRow[] = [
   }
 ];
 
-const vaults: VaultRankRow[] = [
+const demoVaults: VaultRankRow[] = [
   {
     slug: "steady-signal-vault",
     name: "Steady Signal Vault",
@@ -127,11 +144,84 @@ const vaults: VaultRankRow[] = [
   }
 ];
 
+function formatUsd(value: number | null) {
+  if (value === null) {
+    return "--";
+  }
+
+  return new Intl.NumberFormat("en", {
+    currency: "USD",
+    maximumFractionDigits: 0,
+    style: "currency"
+  }).format(value);
+}
+
+function formatPercent(value: number | null) {
+  if (value === null) {
+    return "--";
+  }
+
+  const prefix = value > 0 ? "+" : "";
+  return `${prefix}${value.toFixed(1)}%`;
+}
+
+function slugFromVault(vault: ApiVault) {
+  return `${vault.venue}-${vault.externalId}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 96);
+}
+
+function trustForVault(vault: ApiVault): {
+  trust: string;
+  trustTone: VaultRankRow["trustTone"];
+} {
+  if (vault.managerType === "AI agent trader") {
+    return { trust: "Agent linked", trustTone: "blue" };
+  }
+
+  if (vault.leaderAddress || vault.vaultAddress) {
+    return { trust: "Claimable", trustTone: "amber" };
+  }
+
+  return { trust: "Indexed", trustTone: "" };
+}
+
+function toVaultRankRow(vault: ApiVault): VaultRankRow {
+  const trust = trustForVault(vault);
+  const manager =
+    vault.managerName ||
+    vault.leaderAddress ||
+    vault.vaultAddress ||
+    "Unknown";
+  const managerType =
+    vault.managerType === "Unknown" && manager !== "Unknown"
+      ? "Not linked"
+      : vault.managerType;
+
+  return {
+    slug: slugFromVault(vault),
+    name: vault.name,
+    style: vault.strategy || vault.relationship || "Vault strategy",
+    venue: vault.venue,
+    manager,
+    managerType,
+    aum: formatUsd(vault.aumUsd),
+    return30d: formatPercent(vault.return30d),
+    maxDd: formatPercent(vault.maxDrawdown),
+    trust: trust.trust,
+    trustTone: trust.trustTone,
+    agentManaged: managerType === "AI agent trader"
+  };
+}
+
 export default function Home() {
   const [rank, setRank] = useState<"agents" | "vaults">("agents");
   const [agentFilter, setAgentFilter] = useState("all");
   const [vaultFilter, setVaultFilter] = useState("all");
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [vaultRows, setVaultRows] = useState<VaultRankRow[]>(demoVaults);
 
   useEffect(() => {
     let mounted = true;
@@ -158,6 +248,35 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadVaults() {
+      const response = await fetch("/api/vaults?limit=50", {
+        cache: "no-store"
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        vaults?: ApiVault[];
+      };
+
+      if (!mounted || !Array.isArray(data.vaults) || data.vaults.length === 0) {
+        return;
+      }
+
+      setVaultRows(data.vaults.map(toVaultRankRow));
+    }
+
+    loadVaults().catch(() => {
+      if (mounted) {
+        setVaultRows(demoVaults);
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const visibleAgents = useMemo(() => {
     return agents.filter((agent) => {
       if (agentFilter === "with-vault") {
@@ -173,7 +292,7 @@ export default function Home() {
   }, [agentFilter]);
 
   const visibleVaults = useMemo(() => {
-    return vaults.filter((vault) => {
+    return vaultRows.filter((vault) => {
       if (vaultFilter === "agent-managed") {
         return vault.agentManaged;
       }
@@ -184,7 +303,7 @@ export default function Home() {
 
       return true;
     });
-  }, [vaultFilter]);
+  }, [vaultFilter, vaultRows]);
 
   return (
     <main className="site-shell">

@@ -16,3 +16,12 @@ Registry network:
 - Testnet fallback: Arbitrum Sepolia, chain id `421614`.
 
 Later phases can add rankings, vault onboarding, trading records, trust scoring, and marketplace flows.
+
+Vault sync:
+
+- `GET /api/vaults` returns ranked vault rows for the frontend.
+- `GET` or `POST /api/jobs/sync-vaults` syncs vaults into Postgres.
+- Vercel Cron runs `/api/jobs/sync-vaults` hourly via `vercel.json`.
+- Set `CRON_SECRET` in production so the sync job rejects unauthenticated calls.
+- Hyperliquid defaults to `https://stats-data.hyperliquid.xyz/Mainnet/vaults`.
+- Set `AFX_VAULTS_URL` when the AFX vault list endpoint is confirmed. If unset, AFX sync is skipped and recorded in `vault_sync_runs`.

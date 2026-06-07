@@ -49,6 +49,50 @@ create table if not exists agent_drafts (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists schema_migrations (
+  id text primary key,
+  applied_at timestamptz not null default now()
+);
+
+create table if not exists vaults (
+  id text primary key,
+  venue text not null,
+  external_id text not null,
+  name text not null,
+  vault_address text,
+  leader_address text,
+  manager_name text,
+  manager_type text not null default 'Unknown',
+  strategy text,
+  aum_usd numeric,
+  return_1d numeric,
+  return_7d numeric,
+  return_30d numeric,
+  return_all_time numeric,
+  apr numeric,
+  max_drawdown numeric,
+  is_closed boolean not null default false,
+  relationship text,
+  source_url text,
+  raw jsonb not null default '{}'::jsonb,
+  fetched_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (venue, external_id)
+);
+
+create table if not exists vault_sync_runs (
+  id text primary key,
+  venue text not null,
+  status text not null,
+  source_url text,
+  fetched_count integer not null default 0,
+  upserted_count integer not null default 0,
+  error text,
+  started_at timestamptz not null default now(),
+  ended_at timestamptz
+);
+
 create index if not exists login_nonces_address_idx
 on login_nonces (address, expires_at);
 
@@ -57,3 +101,16 @@ on sessions (user_id, expires_at);
 
 create index if not exists agent_drafts_user_idx
 on agent_drafts (user_id, updated_at desc);
+
+create index if not exists vaults_rank_idx
+on vaults (venue, is_closed, aum_usd desc nulls last);
+
+create index if not exists vaults_updated_idx
+on vaults (updated_at desc);
+
+create index if not exists vault_sync_runs_started_idx
+on vault_sync_runs (started_at desc);
+
+insert into schema_migrations (id)
+values ('20260608_vault_sync')
+on conflict (id) do nothing;
