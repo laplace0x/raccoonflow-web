@@ -1,7 +1,7 @@
 import { getAgent } from "@/lib/agents";
 import {
   activeRegistryChain,
-  futureProductionRegistryChain
+  testRegistryChain
 } from "@/lib/chains";
 
 type RouteContext = {
@@ -30,12 +30,11 @@ export async function GET(_request: Request, context: RouteContext) {
       chainId: activeRegistryChain.chainId,
       identityRegistryAddress: activeRegistryChain.identityRegistryAddress,
       explorerUrl: activeRegistryChain.explorerUrl,
-      productionTarget: {
-        name: futureProductionRegistryChain.name,
-        key: futureProductionRegistryChain.key,
-        chainId: futureProductionRegistryChain.chainId,
-        identityRegistryAddress:
-          futureProductionRegistryChain.identityRegistryAddress
+      testnetFallback: {
+        name: testRegistryChain.name,
+        key: testRegistryChain.key,
+        chainId: testRegistryChain.chainId,
+        identityRegistryAddress: testRegistryChain.identityRegistryAddress
       }
     },
     raccoonFlow: {

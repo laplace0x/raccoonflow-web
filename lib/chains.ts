@@ -32,6 +32,6 @@ export const supportedChains = {
   }
 } satisfies Record<string, SupportedChain>;
 
-export const activeRegistryChain = supportedChains.arbitrumSepolia;
+export const activeRegistryChain = supportedChains.arbitrumOne;
 
-export const futureProductionRegistryChain = supportedChains.arbitrumOne;
+export const testRegistryChain = supportedChains.arbitrumSepolia;

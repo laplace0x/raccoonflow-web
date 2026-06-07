@@ -12,7 +12,7 @@ Phase one scope:
 
 Registry network:
 
-- Current testing network: Arbitrum Sepolia, chain id `421614`.
-- Production target after testing: Arbitrum One, chain id `42161`.
+- Active network: Arbitrum One, chain id `42161`.
+- Testnet fallback: Arbitrum Sepolia, chain id `421614`.
 
 Later phases can add rankings, vault onboarding, trading records, trust scoring, and marketplace flows.

@@ -1,6 +1,6 @@
 import {
   activeRegistryChain,
-  futureProductionRegistryChain
+  testRegistryChain
 } from "@/lib/chains";
 
 export function GET() {
@@ -10,7 +10,7 @@ export function GET() {
     phase: "wallet_and_erc8004_registry_v0.1",
     registryNetwork: {
       active: activeRegistryChain,
-      productionTarget: futureProductionRegistryChain
+      testnetFallback: testRegistryChain
     }
   });
 }

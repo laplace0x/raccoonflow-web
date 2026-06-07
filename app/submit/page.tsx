@@ -1,7 +1,4 @@
-import {
-  activeRegistryChain,
-  futureProductionRegistryChain
-} from "@/lib/chains";
+import { activeRegistryChain } from "@/lib/chains";
 import { WalletRegistration } from "./wallet-registration";
 
 export const metadata = {
@@ -26,10 +23,8 @@ export default function SubmitPage() {
             owner identity.
           </div>
           <div className="status-box muted-box">
-            Test registry network: {activeRegistryChain.name} (
-            {activeRegistryChain.chainId}). Production target:{" "}
-            {futureProductionRegistryChain.name} (
-            {futureProductionRegistryChain.chainId}).
+            Active registry network: {activeRegistryChain.name} (
+            {activeRegistryChain.chainId}).
           </div>
         </div>
         <WalletRegistration />
