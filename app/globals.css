@@ -327,6 +327,73 @@ button:disabled {
   padding-top: 16px;
 }
 
+.owner-agents {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid #ececea;
+  padding-top: 16px;
+}
+
+.owner-agents-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.owner-agents-head strong {
+  font-size: 18px;
+}
+
+.agent-list {
+  display: grid;
+  gap: 10px;
+}
+
+.agent-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(100px, 0.7fr) minmax(96px, 0.7fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #ececea;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfbf8;
+}
+
+.agent-row strong,
+.agent-row span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.agent-row span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.agent-links {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.agent-links a {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.empty-state {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .status-box {
   border: 1px solid #b9ddd1;
   border-radius: 8px;
@@ -459,5 +526,13 @@ button:disabled {
   .grid,
   .agent-meta {
     grid-template-columns: 1fr;
+  }
+
+  .agent-row {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-links {
+    justify-content: flex-start;
   }
 }

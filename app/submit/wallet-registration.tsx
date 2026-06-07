@@ -49,6 +49,21 @@ type FinalizedAgent = {
   txHash: string;
 };
 
+type OwnedAgent = {
+  id: string;
+  name: string;
+  slug: string;
+  ownerLabel: string | null;
+  strategyClass: string | null;
+  status: string;
+  txHash: string | null;
+  erc8004AgentId: string | null;
+  profileUrl: string;
+  metadataUrl: string;
+  explorerUrl: string | null;
+  updatedAt: string;
+};
+
 declare global {
   interface Window {
     ethereum?: EthereumProvider;
@@ -105,6 +120,7 @@ export function WalletRegistration() {
   const [finalizedAgent, setFinalizedAgent] = useState<FinalizedAgent | null>(
     null
   );
+  const [ownedAgents, setOwnedAgents] = useState<OwnedAgent[]>([]);
 
   const hasWallet = useMemo(
     () => typeof window !== "undefined" && Boolean(window.ethereum),
@@ -132,6 +148,7 @@ export function WalletRegistration() {
       if (data.user) {
         setWalletAddress(data.user.walletAddress);
         setStatus("Logged in. You can create a trade agent next.");
+        await loadOwnedAgents();
       } else if (!data.configured) {
         setStatus("Database is not configured for this deployment yet.");
       }
@@ -251,6 +268,7 @@ export function WalletRegistration() {
       setReservedAgent(null);
       setSubmittedAgent(null);
       setFinalizedAgent(null);
+      await loadOwnedAgents();
     } catch (signError) {
       setError(
         signError instanceof Error ? signError.message : "Wallet sign-in failed."
@@ -276,6 +294,7 @@ export function WalletRegistration() {
       setReservedAgent(null);
       setSubmittedAgent(null);
       setFinalizedAgent(null);
+      setOwnedAgents([]);
       setStatus("Logged out. Connect your wallet to start again.");
     } catch (logoutError) {
       setError(
@@ -284,6 +303,24 @@ export function WalletRegistration() {
     } finally {
       setIsBusy(false);
     }
+  }
+
+  async function loadOwnedAgents() {
+    const response = await fetch("/api/trade-agents", {
+      cache: "no-store"
+    });
+
+    if (response.status === 401) {
+      setOwnedAgents([]);
+      return;
+    }
+
+    const data = await readJson<{
+      configured: boolean;
+      agents: OwnedAgent[];
+    }>(response);
+
+    setOwnedAgents(data.agents);
   }
 
   async function ensureRegistryChain() {
@@ -344,6 +381,7 @@ export function WalletRegistration() {
       if (response.status !== 202) {
         const data = await readJson<{ agent: FinalizedAgent }>(response);
         setFinalizedAgent(data.agent);
+        await loadOwnedAgents();
         setStatus(`ERC-8004 agent #${data.agent.erc8004AgentId} registered.`);
         return;
       }
@@ -419,6 +457,7 @@ export function WalletRegistration() {
     const data = await readJson<{ agent: SubmittedAgent }>(response);
 
     setSubmittedAgent(data.agent);
+    await loadOwnedAgents();
     setStatus("ERC-8004 registration transaction submitted.");
     await finalizeRegistryRegistration(data.agent.id);
   }
@@ -456,6 +495,7 @@ export function WalletRegistration() {
 
       reservationCompleted = true;
       setReservedAgent(data.agent);
+      await loadOwnedAgents();
       form.reset();
       await submitRegistryTransaction(data.agent);
     } catch (agentError) {
@@ -503,6 +543,45 @@ export function WalletRegistration() {
 
       {isLoggedIn ? (
         <>
+          <section className="owner-agents" aria-label="Your trade agents">
+            <div className="owner-agents-head">
+              <strong>Your trade agents</strong>
+              <button
+                className="text-button"
+                type="button"
+                onClick={loadOwnedAgents}
+                disabled={isBusy}
+              >
+                Refresh
+              </button>
+            </div>
+            {ownedAgents.length ? (
+              <div className="agent-list">
+                {ownedAgents.map((agent) => (
+                  <article className="agent-row" key={agent.id}>
+                    <div>
+                      <strong>{agent.name}</strong>
+                      <span>{agent.strategyClass || "Unclassified strategy"}</span>
+                    </div>
+                    <div>
+                      <span>Status</span>
+                      <strong>{agent.status}</strong>
+                    </div>
+                    <div>
+                      <span>ERC-8004</span>
+                      <strong>{agent.erc8004AgentId ?? "pending"}</strong>
+                    </div>
+                    <div className="agent-links">
+                      <a href={agent.metadataUrl}>Metadata</a>
+                      {agent.explorerUrl ? <a href={agent.explorerUrl}>Tx</a> : null}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="empty-state">No trade agents under this wallet yet.</p>
+            )}
+          </section>
           <form className="trade-agent-form" onSubmit={createTradeAgent}>
             <div className="field">
               <label htmlFor="agentName">Agent name</label>

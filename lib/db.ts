@@ -125,6 +125,11 @@ export async function ensureSchema() {
         create index if not exists sessions_user_idx
         on sessions (user_id, expires_at)
       `;
+
+      await tx`
+        create index if not exists agent_drafts_user_idx
+        on agent_drafts (user_id, updated_at desc)
+      `;
     });
   }
 
