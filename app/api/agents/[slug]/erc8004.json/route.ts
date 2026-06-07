@@ -1,4 +1,8 @@
 import { getAgent } from "@/lib/agents";
+import {
+  activeRegistryChain,
+  futureProductionRegistryChain
+} from "@/lib/chains";
 
 type RouteContext = {
   params: Promise<{
@@ -18,6 +22,18 @@ export async function GET(_request: Request, context: RouteContext) {
     reputation: agent.reputationUri,
     owner: {
       wallet: agent.wallet
+    },
+    registryNetwork: {
+      stage: activeRegistryChain.stage,
+      name: activeRegistryChain.name,
+      key: activeRegistryChain.key,
+      chainId: activeRegistryChain.chainId,
+      explorerUrl: activeRegistryChain.explorerUrl,
+      productionTarget: {
+        name: futureProductionRegistryChain.name,
+        key: futureProductionRegistryChain.key,
+        chainId: futureProductionRegistryChain.chainId
+      }
     },
     raccoonFlow: {
       profile: `https://raccoonflow.ai/agents/${agent.slug}`,

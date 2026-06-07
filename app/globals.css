@@ -330,6 +330,12 @@ button:disabled {
   line-height: 1.5;
 }
 
+.muted-box {
+  border-color: var(--line);
+  background: #fbfbf8;
+  color: var(--muted);
+}
+
 .warning-box,
 .error-box {
   border-radius: 8px;

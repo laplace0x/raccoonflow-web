@@ -1,3 +1,7 @@
+import {
+  activeRegistryChain,
+  futureProductionRegistryChain
+} from "@/lib/chains";
 import { WalletRegistration } from "./wallet-registration";
 
 export const metadata = {
@@ -20,6 +24,12 @@ export default function SubmitPage() {
             Raccoon Flow never asks for private keys. The browser wallet signs a
             short login challenge, then the platform records the wallet as the
             owner identity.
+          </div>
+          <div className="status-box muted-box">
+            Test registry network: {activeRegistryChain.name} (
+            {activeRegistryChain.chainId}). Production target:{" "}
+            {futureProductionRegistryChain.name} (
+            {futureProductionRegistryChain.chainId}).
           </div>
         </div>
         <WalletRegistration />
