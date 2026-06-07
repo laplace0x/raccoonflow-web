@@ -349,6 +349,27 @@ button:disabled {
   color: #8f2020;
 }
 
+.success-box {
+  display: block;
+  border: 1px solid #b9ddd1;
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: #eef8f4;
+  color: #184f41;
+  line-height: 1.45;
+}
+
+.success-box strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.success-box a {
+  font-weight: 760;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .warning-box code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 760;

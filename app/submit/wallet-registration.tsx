@@ -17,6 +17,14 @@ type AuthUser = {
   walletAddress: string;
 };
 
+type TradeAgent = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  url: string;
+};
+
 declare global {
   interface Window {
     ethereum?: EthereumProvider;
@@ -51,6 +59,7 @@ export function WalletRegistration() {
   const [status, setStatus] = useState("Connect your wallet to start.");
   const [error, setError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
+  const [createdAgent, setCreatedAgent] = useState<TradeAgent | null>(null);
 
   const hasWallet = useMemo(
     () => typeof window !== "undefined" && Boolean(window.ethereum),
@@ -194,6 +203,7 @@ export function WalletRegistration() {
 
       setUser(verifyData.user);
       setStatus("Logged in. You can create a trade agent next.");
+      setCreatedAgent(null);
     } catch (signError) {
       setError(
         signError instanceof Error ? signError.message : "Wallet sign-in failed."
@@ -216,11 +226,54 @@ export function WalletRegistration() {
       setUser(null);
       setWalletAddress("");
       setChainId(null);
+      setCreatedAgent(null);
       setStatus("Logged out. Connect your wallet to start again.");
     } catch (logoutError) {
       setError(
         logoutError instanceof Error ? logoutError.message : "Log out failed."
       );
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function createTradeAgent(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setCreatedAgent(null);
+    setIsBusy(true);
+
+    const formData = new FormData(event.currentTarget);
+    const name = String(formData.get("agentName") ?? "");
+    const ownerLabel = String(formData.get("ownerName") ?? "");
+    const strategyClass = String(formData.get("strategyClass") ?? "");
+
+    try {
+      setStatus("Creating trade agent...");
+
+      const response = await fetch("/api/trade-agents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name,
+          ownerLabel,
+          strategyClass
+        })
+      });
+      const data = await readJson<{ agent: TradeAgent }>(response);
+
+      setCreatedAgent(data.agent);
+      setStatus("Trade agent created. Registration can continue from here.");
+      event.currentTarget.reset();
+    } catch (agentError) {
+      setError(
+        agentError instanceof Error
+          ? agentError.message
+          : "Could not create trade agent."
+      );
+      setStatus("Logged in. You can create a trade agent next.");
     } finally {
       setIsBusy(false);
     }
@@ -255,14 +308,26 @@ export function WalletRegistration() {
 
       {isLoggedIn ? (
         <>
-          <div className="trade-agent-form">
+          <form className="trade-agent-form" onSubmit={createTradeAgent}>
             <div className="field">
               <label htmlFor="agentName">Agent name</label>
-              <input id="agentName" name="agentName" placeholder="Alpha Router" />
+              <input
+                id="agentName"
+                name="agentName"
+                placeholder="Alpha Router"
+                required
+                minLength={2}
+                maxLength={80}
+              />
             </div>
             <div className="field">
               <label htmlFor="ownerName">Owner or provider</label>
-              <input id="ownerName" name="ownerName" placeholder="Example Provider" />
+              <input
+                id="ownerName"
+                name="ownerName"
+                placeholder="Example Provider"
+                maxLength={120}
+              />
             </div>
             <div className="field">
               <label htmlFor="strategyClass">Strategy class</label>
@@ -270,12 +335,20 @@ export function WalletRegistration() {
                 id="strategyClass"
                 name="strategyClass"
                 placeholder="Trend following"
+                maxLength={120}
               />
             </div>
-            <button className="button secondary" type="button">
-              Create trade agent
+            <button className="button secondary" type="submit" disabled={isBusy}>
+              {isBusy ? "Creating..." : "Create trade agent"}
             </button>
-          </div>
+          </form>
+          {createdAgent ? (
+            <div className="success-box">
+              <strong>{createdAgent.name}</strong>
+              <span>Created at </span>
+              <a href={createdAgent.url}>{createdAgent.url}</a>
+            </div>
+          ) : null}
           <button
             className="button danger"
             type="button"
