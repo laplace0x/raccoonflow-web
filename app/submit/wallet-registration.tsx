@@ -5,6 +5,11 @@ import { getAddress } from "viem";
 
 type EthereumProvider = {
   request<T = unknown>(args: { method: string; params?: unknown[] }): Promise<T>;
+  on?(event: "accountsChanged", listener: (accounts: string[]) => void): void;
+  removeListener?(
+    event: "accountsChanged",
+    listener: (accounts: string[]) => void
+  ): void;
 };
 
 type AuthUser = {
@@ -93,6 +98,39 @@ export function WalletRegistration() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!window.ethereum?.on) {
+      return;
+    }
+
+    const handleAccountsChanged = (accounts: string[]) => {
+      const nextAddress = accounts[0] ? getAddress(accounts[0]) : "";
+
+      setWalletAddress(nextAddress);
+      setChainId(null);
+
+      if (!nextAddress) {
+        setUser(null);
+        setStatus("Wallet disconnected. Connect again to log in.");
+        return;
+      }
+
+      if (user && nextAddress !== user.walletAddress) {
+        setUser(null);
+        setStatus("Wallet changed. Log in again with the active wallet.");
+      }
+    };
+
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+
+    return () => {
+      window.ethereum?.removeListener?.(
+        "accountsChanged",
+        handleAccountsChanged
+      );
+    };
+  }, [user]);
+
   async function connectAndSign() {
     setError("");
 
@@ -155,7 +193,7 @@ export function WalletRegistration() {
       const verifyData = await readJson<{ user: AuthUser }>(verifyResponse);
 
       setUser(verifyData.user);
-      setStatus("Wallet registered. You can create an agent draft next.");
+      setStatus("Logged in. You can create an agent draft next.");
     } catch (signError) {
       setError(
         signError instanceof Error ? signError.message : "Wallet sign-in failed."
@@ -171,22 +209,29 @@ export function WalletRegistration() {
     setError("");
 
     try {
-      await fetch("/api/auth/logout", {
+      const response = await fetch("/api/auth/logout", {
         method: "POST"
       });
+      await readJson<{ ok: boolean }>(response);
       setUser(null);
       setWalletAddress("");
       setChainId(null);
-      setStatus("Connect your wallet to start.");
+      setStatus("Logged out. Connect your wallet to start again.");
+    } catch (logoutError) {
+      setError(
+        logoutError instanceof Error ? logoutError.message : "Log out failed."
+      );
     } finally {
       setIsBusy(false);
     }
   }
 
+  const isLoggedIn = Boolean(user);
+
   return (
     <div className="panel registration-form wallet-panel">
       <div className="wallet-state">
-        <span>{user ? "Wallet owner" : "Owner identity"}</span>
+        <span>{isLoggedIn ? "Logged in as" : "Owner identity"}</span>
         <strong>{walletAddress ? shortAddress(walletAddress) : "Not connected"}</strong>
         {chainId ? <em>Chain {chainId}</em> : null}
       </div>
@@ -208,16 +253,7 @@ export function WalletRegistration() {
 
       {error ? <div className="error-box">{error}</div> : null}
 
-      <button
-        className="button"
-        type="button"
-        onClick={connectAndSign}
-        disabled={isBusy || !configured}
-      >
-        {isBusy ? "Working..." : user ? "Sign again" : "Connect wallet and sign"}
-      </button>
-
-      {user ? (
+      {isLoggedIn ? (
         <>
           <div className="agent-draft">
             <div className="field">
@@ -241,15 +277,24 @@ export function WalletRegistration() {
             </button>
           </div>
           <button
-            className="text-button"
+            className="button danger"
             type="button"
             onClick={logout}
             disabled={isBusy}
           >
-            Disconnect session
+            {isBusy ? "Logging out..." : "Log out"}
           </button>
         </>
-      ) : null}
+      ) : (
+        <button
+          className="button"
+          type="button"
+          onClick={connectAndSign}
+          disabled={isBusy || !configured}
+        >
+          {isBusy ? "Working..." : "Connect wallet and log in"}
+        </button>
+      )}
     </div>
   );
 }

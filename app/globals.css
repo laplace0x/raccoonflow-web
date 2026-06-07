@@ -150,6 +150,12 @@ button:disabled {
   color: var(--ink);
 }
 
+.button.danger {
+  border-color: #c8b7ad;
+  background: #fff8f4;
+  color: #74351b;
+}
+
 .panel {
   border: 1px solid var(--line);
   border-radius: 8px;
