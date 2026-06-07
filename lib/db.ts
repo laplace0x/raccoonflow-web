@@ -147,6 +147,20 @@ export async function ensureSchema() {
       `;
 
       await tx`
+        create table if not exists vault_raw_records (
+          id text primary key,
+          venue text not null,
+          external_id text not null,
+          source_url text,
+          raw jsonb not null,
+          fetched_at timestamptz not null default now(),
+          created_at timestamptz not null default now(),
+          updated_at timestamptz not null default now(),
+          unique (venue, external_id)
+        )
+      `;
+
+      await tx`
         alter table agent_drafts
         add column if not exists registry_chain_id bigint
       `;
@@ -197,8 +211,19 @@ export async function ensureSchema() {
       `;
 
       await tx`
+        create index if not exists vault_raw_records_updated_idx
+        on vault_raw_records (updated_at desc)
+      `;
+
+      await tx`
         insert into schema_migrations (id)
         values ('20260608_vault_sync')
+        on conflict (id) do nothing
+      `;
+
+      await tx`
+        insert into schema_migrations (id)
+        values ('20260608_vault_raw_records')
         on conflict (id) do nothing
       `;
     });

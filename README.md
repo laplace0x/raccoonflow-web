@@ -25,3 +25,4 @@ Vault sync:
 - Set `CRON_SECRET` in production so the sync job rejects unauthenticated calls.
 - Hyperliquid defaults to `https://stats-data.hyperliquid.xyz/Mainnet/vaults`.
 - Set `AFX_VAULTS_URL` when the AFX vault list endpoint is confirmed. If unset, AFX sync is skipped and recorded in `vault_sync_runs`.
+- See `docs/vault-data-model.md` for raw storage, normalized fields, and derived metric notes.

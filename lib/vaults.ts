@@ -447,6 +447,35 @@ async function upsertVaults(vaults: NormalizedVault[]) {
 
   for (const vault of vaults) {
     const id = `${vault.venue.toLowerCase()}:${vault.externalId.toLowerCase()}`;
+    const rawJson = toJsonValue(vault.raw);
+
+    await sql`
+      insert into vault_raw_records (
+        id,
+        venue,
+        external_id,
+        source_url,
+        raw,
+        fetched_at,
+        updated_at
+      )
+      values (
+        ${id},
+        ${vault.venue},
+        ${vault.externalId},
+        ${vault.sourceUrl},
+        ${sql.json(rawJson)},
+        now(),
+        now()
+      )
+      on conflict (venue, external_id)
+      do update set
+        source_url = excluded.source_url,
+        raw = excluded.raw,
+        fetched_at = excluded.fetched_at,
+        updated_at = now()
+    `;
+
     const rows = await sql<{ id: string }[]>`
       insert into vaults (
         id,
@@ -492,7 +521,7 @@ async function upsertVaults(vaults: NormalizedVault[]) {
         ${vault.isClosed},
         ${vault.relationship},
         ${vault.sourceUrl},
-        ${sql.json(toJsonValue(vault.raw))},
+        ${sql.json(rawJson)},
         now(),
         now()
       )

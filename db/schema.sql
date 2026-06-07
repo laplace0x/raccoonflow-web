@@ -93,6 +93,18 @@ create table if not exists vault_sync_runs (
   ended_at timestamptz
 );
 
+create table if not exists vault_raw_records (
+  id text primary key,
+  venue text not null,
+  external_id text not null,
+  source_url text,
+  raw jsonb not null,
+  fetched_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (venue, external_id)
+);
+
 create index if not exists login_nonces_address_idx
 on login_nonces (address, expires_at);
 
@@ -111,6 +123,13 @@ on vaults (updated_at desc);
 create index if not exists vault_sync_runs_started_idx
 on vault_sync_runs (started_at desc);
 
+create index if not exists vault_raw_records_updated_idx
+on vault_raw_records (updated_at desc);
+
 insert into schema_migrations (id)
 values ('20260608_vault_sync')
+on conflict (id) do nothing;
+
+insert into schema_migrations (id)
+values ('20260608_vault_raw_records')
 on conflict (id) do nothing;
