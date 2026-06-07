@@ -156,6 +156,12 @@ button:disabled {
   color: #74351b;
 }
 
+.compact-button {
+  min-height: 42px;
+  margin-top: 12px;
+  padding: 0 14px;
+}
+
 .panel {
   border: 1px solid var(--line);
   border-radius: 8px;

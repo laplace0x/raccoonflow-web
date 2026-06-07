@@ -68,6 +68,11 @@ const identityRegistryAbi = [
   }
 ] as const;
 
+const wait = (ms: number) =>
+  new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+
 async function readJson<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => ({}))) as T;
 
@@ -324,21 +329,53 @@ export function WalletRegistration() {
     setChainId(activeRegistryChain.chainId);
   }
 
-  async function finalizeRegistryRegistration(agentId: string) {
-    setStatus("Finalizing ERC-8004 registration...");
+  async function finalizeRegistryRegistration(agentId: string, attempts = 12) {
+    setError("");
 
-    const response = await fetch(`/api/trade-agents/${agentId}/finalize`, {
-      method: "POST"
-    });
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      setStatus(
+        `Checking ERC-8004 registration confirmation (${attempt}/${attempts})...`
+      );
 
-    if (response.status === 202) {
-      setStatus("Registry transaction submitted. Waiting for confirmation.");
+      const response = await fetch(`/api/trade-agents/${agentId}/finalize`, {
+        method: "POST"
+      });
+
+      if (response.status !== 202) {
+        const data = await readJson<{ agent: FinalizedAgent }>(response);
+        setFinalizedAgent(data.agent);
+        setStatus(`ERC-8004 agent #${data.agent.erc8004AgentId} registered.`);
+        return;
+      }
+
+      if (attempt < attempts) {
+        await wait(3000);
+      }
+    }
+
+    setStatus(
+      "Registry transaction submitted. Confirmation is still pending; check again soon."
+    );
+  }
+
+  async function retryFinalizeRegistration() {
+    if (!submittedAgent) {
       return;
     }
 
-    const data = await readJson<{ agent: FinalizedAgent }>(response);
-    setFinalizedAgent(data.agent);
-    setStatus(`ERC-8004 agent #${data.agent.erc8004AgentId} registered.`);
+    setIsBusy(true);
+
+    try {
+      await finalizeRegistryRegistration(submittedAgent.id, 8);
+    } catch (finalizeError) {
+      setError(
+        finalizeError instanceof Error
+          ? finalizeError.message
+          : "Could not finalize registration."
+      );
+    } finally {
+      setIsBusy(false);
+    }
   }
 
   async function submitRegistryTransaction(agent: TradeAgent) {
@@ -520,9 +557,17 @@ export function WalletRegistration() {
               <span>Registry transaction: </span>
               <a href={submittedAgent.explorerUrl}>{submittedAgent.txHash}</a>
               <p>
-                Transaction submitted on {activeRegistryChain.name}. Finalize
-                after confirmation by reading the minted ERC-8004 agentId.
+                Transaction submitted on {activeRegistryChain.name}. Waiting
+                for confirmation and minted ERC-8004 agentId.
               </p>
+              <button
+                className="button secondary compact-button"
+                type="button"
+                onClick={retryFinalizeRegistration}
+                disabled={isBusy}
+              >
+                {isBusy ? "Checking..." : "Check finalization"}
+              </button>
             </div>
           ) : reservedAgent ? (
             <div className="success-box">
